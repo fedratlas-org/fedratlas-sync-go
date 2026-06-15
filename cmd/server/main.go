@@ -13,6 +13,8 @@ import (
 	"fedratlas-sync/internal/crypto"
 	"fedratlas-sync/internal/storage"
 	"fedratlas-sync/internal/sync"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -66,38 +68,37 @@ func main() {
 	healthHandler := api.NewHealthHandler(serverID, engine, db)
 	manifestHandler := api.NewManifestHandler(serverID, signer)
 	peersHandler := api.NewPeersHandler(engine, db)
-
-	// Register HTTP routes
-	mux := http.NewServeMux()
-
-	// Health endpoints
-	mux.HandleFunc("GET /health", healthHandler.HealthCheck)
-	mux.HandleFunc("GET /ready", healthHandler.ReadinessCheck)
-	mux.HandleFunc("GET /health/detailed", healthHandler.DetailedHealth)
-	mux.HandleFunc("GET /ping", healthHandler.Ping)
-
-	// Federation endpoints
-	mux.HandleFunc("POST /fedmap/v1/inbox", inboxHandler.HandleInbox)
-	mux.HandleFunc("GET /fedmap/v1/manifest", manifestHandler.GetManifest)
-
-	// Peer management endpoints
-	mux.HandleFunc("GET /fedmap/v1/peers", peersHandler.ListPeers)
-	mux.HandleFunc("POST /fedmap/v1/peers", peersHandler.AddPeer)
-
 	featuresHandler := api.NewFeaturesHandler(engine, db)
 
-	// With standard mux:
-	mux.HandleFunc("GET /fedmap/v1/collections", featuresHandler.ListCollections)
-	mux.HandleFunc("GET /fedmap/v1/collections/{collectionId}/items", featuresHandler.ListFeatures)
-	mux.HandleFunc("POST /fedmap/v1/collections/{collectionId}/items", featuresHandler.CreateFeature)
-	mux.HandleFunc("GET /fedmap/v1/collections/{collectionId}/items/{featureId}", featuresHandler.GetFeature)
-	mux.HandleFunc("PUT /fedmap/v1/collections/{collectionId}/items/{featureId}", featuresHandler.UpdateFeature)
-	mux.HandleFunc("DELETE /fedmap/v1/collections/{collectionId}/items/{featureId}", featuresHandler.DeleteFeature)
+	// Register HTTP routes
+	r := chi.NewRouter()
+
+	// Health endpoints
+	r.Get("/health", healthHandler.HealthCheck)
+	r.Get("/ready", healthHandler.ReadinessCheck)
+	r.Get("/health/detailed", healthHandler.DetailedHealth)
+	r.Get("/ping", healthHandler.Ping)
+
+	// Federation endpoints
+	r.Post("/fedmap/v1/inbox", inboxHandler.HandleInbox)
+	r.Get("/fedmap/v1/manifest", manifestHandler.GetManifest)
+
+	// Peer management endpoints
+	r.Get("/fedmap/v1/peers", peersHandler.ListPeers)
+	r.Post("/fedmap/v1/peers", peersHandler.AddPeer)
+
+	// Features
+	r.Get("/fedmap/v1/collections", featuresHandler.ListCollections)
+	r.Get("/fedmap/v1/collections/{collectionId}/items", featuresHandler.ListFeatures)
+	r.Post("/fedmap/v1/collections/{collectionId}/items", featuresHandler.CreateFeature)
+	r.Get("/fedmap/v1/collections/{collectionId}/items/{featureId}", featuresHandler.GetFeature)
+	r.Put("/fedmap/v1/collections/{collectionId}/items/{featureId}", featuresHandler.UpdateFeature)
+	r.Delete("/fedmap/v1/collections/{collectionId}/items/{featureId}", featuresHandler.DeleteFeature)
 
 	// Create HTTP server with timeouts
 	httpServer := &http.Server{
 		Addr:         ":" + port,
-		Handler:      mux,
+		Handler:      r,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
