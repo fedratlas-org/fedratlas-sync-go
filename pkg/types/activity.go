@@ -114,11 +114,22 @@ type Link struct {
 // ========== Sync Message Types ==========
 
 type SyncMessage struct {
+	// Identification
+	SenderServerID string `json:"sender_server_id"`
+
+	// Content
+	FeatureID        int64           `json:"feature_id"`
+	ActivityType     string          `json:"activity_type"`
+	Version          int             `json:"version"`
 	TargetObjectData json.RawMessage `json:"target_object_data"`
-	Timestamp        time.Time       `json:"timestamp"`
-	PayloadChecksum  string          `json:"payload_checksum"`
-	SenderSignature  string          `json:"sender_signature"`
-	SenderServerID   string          `json:"sender_server_id"`
+
+	// Metadata
+	Timestamp    time.Time `json:"timestamp"`
+	CollectionID string    `json:"collection_id,omitempty"`
+
+	// Security
+	PayloadChecksum string `json:"payload_checksum"`
+	SenderSignature string `json:"sender_signature"`
 }
 
 // ========== Query Types ==========

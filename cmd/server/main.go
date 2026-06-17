@@ -62,9 +62,10 @@ func main() {
 	engine := sync.NewSyncEngine(db, signer, config)
 
 	// Create HTTP handlers
-	inboxHandler := sync.NewInboxHandler(engine, db)
+	//inboxHandler := sync.NewInboxHandler(engine, db)
 
 	// Create API handlers
+	inboxHandler := api.NewInboxHandler(engine, db)
 	healthHandler := api.NewHealthHandler(serverID, engine, db)
 	manifestHandler := api.NewManifestHandler(serverID, signer)
 	peersHandler := api.NewPeersHandler(engine, db)
@@ -87,7 +88,7 @@ func main() {
 	r.Get("/fedmap/v1/peers", peersHandler.ListPeers)
 	r.Post("/fedmap/v1/peers", peersHandler.AddPeer)
 
-	// Features
+	// Features endpoints
 	r.Get("/fedmap/v1/collections", featuresHandler.ListCollections)
 	r.Get("/fedmap/v1/collections/{collectionId}/items", featuresHandler.ListFeatures)
 	r.Post("/fedmap/v1/collections/{collectionId}/items", featuresHandler.CreateFeature)

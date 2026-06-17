@@ -15,7 +15,7 @@ import (
 
 type SyncEngine struct {
 	storage   *storage.PostgresStorage
-	signer    *crypto.Signer
+	Signer    *crypto.Signer
 	outbox    *OutboxProcessor
 	inbox     *InboxHandler
 	peers     map[string]*types.Peer
@@ -52,7 +52,7 @@ func NewSyncEngine(storage *storage.PostgresStorage, signer *crypto.Signer, conf
 
 	engine := &SyncEngine{
 		storage:   storage,
-		signer:    signer,
+		Signer:    signer,
 		peers:     make(map[string]*types.Peer),
 		ctx:       ctx,
 		cancel:    cancel,
@@ -68,28 +68,26 @@ func NewSyncEngine(storage *storage.PostgresStorage, signer *crypto.Signer, conf
 }
 
 // Launches Everything: Initialize all sybsystems
-/*func (e *SyncEngine) Start() error {
+// Update the Start method to set running = true
+func (e *SyncEngine) Start() error {
 	log.Printf("Starting Fedratlas Sync Engine on server: %s", e.config.ServerID)
 
-	// Load existing peers from database
+	e.peersMu.Lock()
+	e.running = true
+	e.peersMu.Unlock()
+
 	if err := e.loadPeers(); err != nil {
+		e.peersMu.Lock()
+		e.running = false
+		e.peersMu.Unlock()
 		return fmt.Errorf("failed to load peers: %w", err)
 	}
 
-	// Start outbox processor (FR-04 - Activity Propagation)
 	go e.outbox.Start()
-
-	// Start health check for peers
 	go e.healthCheckLoop()
 
 	return nil
-}*/
-
-/*func (e *SyncEngine) Stop() {
-	log.Println("Stopping sync engine...")
-	e.cancel()
-	e.outbox.Stop()
-}*/
+}
 
 // OnFeatureChange implements FR-03: Change Log Generation
 // Calls when map data changes
@@ -105,7 +103,7 @@ func (e *SyncEngine) OnFeatureChange(featureID int64, activityType types.Activit
 	}
 
 	// Sign the activity
-	signature, err := e.signer.SignActivity(activity)
+	signature, err := e.Signer.SignActivity(activity)
 	if err != nil {
 		return fmt.Errorf("failed to sign activity: %w", err)
 	}
@@ -182,31 +180,6 @@ func (e *SyncEngine) checkPeerHealth() {
 	// Mark unhealthy peers if they haven't responded
 }
 
-// Add this to internal/sync/engine.go
-/*func (e *SyncEngine) IsRunning() bool {
-	select {
-	case <-e.ctx.Done():
-		return false
-	default:
-		return true
-	}
-}*/
-
-// GetOutboxCount returns the number of pending outbox activities
-/*func (e *SyncEngine) GetOutboxCount() int {
-	// Implement this - query database for pending count
-	count, err := e.storage.GetPendingOutboxCount()
-	if err != nil {
-		return 0
-	}
-	return count
-}*/
-
-// GetStartTime returns when the engine started
-/*func (e *SyncEngine) GetStartTime() time.Time {
-	return e.startTime
-}*/
-
 // IsRunning returns whether the sync engine is running
 func (e *SyncEngine) IsRunning() bool {
 	e.peersMu.RLock()
@@ -232,27 +205,6 @@ func (e *SyncEngine) GetOutboxCount() int {
 func (e *SyncEngine) GetLastSyncTime() time.Time {
 	// Return last sync time from database or current time
 	return time.Now()
-}
-
-// Update the Start method to set running = true
-func (e *SyncEngine) Start() error {
-	log.Printf("Starting Fedratlas Sync Engine on server: %s", e.config.ServerID)
-
-	e.peersMu.Lock()
-	e.running = true
-	e.peersMu.Unlock()
-
-	if err := e.loadPeers(); err != nil {
-		e.peersMu.Lock()
-		e.running = false
-		e.peersMu.Unlock()
-		return fmt.Errorf("failed to load peers: %w", err)
-	}
-
-	go e.outbox.Start()
-	go e.healthCheckLoop()
-
-	return nil
 }
 
 // Update the Stop method to set running = false
