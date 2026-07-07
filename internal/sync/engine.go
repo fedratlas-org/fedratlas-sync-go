@@ -118,68 +118,6 @@ func (e *SyncEngine) OnFeatureChange(featureID int64, activityType types.Activit
 	return nil
 }
 
-func (e *SyncEngine) loadPeers() error {
-	peers, err := e.storage.GetAllPeers()
-	if err != nil {
-		return err
-	}
-
-	e.peersMu.Lock()
-	defer e.peersMu.Unlock()
-
-	for _, peer := range peers {
-		if peer.Status == "FOLLOWING" {
-			e.peers[peer.ServerID] = peer
-		}
-	}
-
-	log.Printf("Loaded %d active peers", len(e.peers))
-	return nil
-}
-
-func (e *SyncEngine) GetPeers() []*types.Peer {
-	e.peersMu.RLock()
-	defer e.peersMu.RUnlock()
-
-	peers := make([]*types.Peer, 0, len(e.peers))
-	for _, peer := range e.peers {
-		peers = append(peers, peer)
-	}
-	return peers
-}
-
-func (e *SyncEngine) AddPeer(peer *types.Peer) error {
-	e.peersMu.Lock()
-	defer e.peersMu.Unlock()
-
-	if err := e.storage.AddPeer(peer); err != nil {
-		return err
-	}
-
-	e.peers[peer.ServerID] = peer
-	log.Printf("Added new peer: %s (trust_score: %.2f)", peer.ServerID, peer.TrustScore)
-	return nil
-}
-
-func (e *SyncEngine) healthCheckLoop() {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-e.ctx.Done():
-			return
-		case <-ticker.C:
-			e.checkPeerHealth()
-		}
-	}
-}
-
-func (e *SyncEngine) checkPeerHealth() {
-	// Implementation would ping peers and update last_seen
-	// Mark unhealthy peers if they haven't responded
-}
-
 // IsRunning returns whether the sync engine is running
 func (e *SyncEngine) IsRunning() bool {
 	e.peersMu.RLock()

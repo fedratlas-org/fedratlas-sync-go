@@ -61,14 +61,24 @@ type DatasetInfo struct {
 
 // ========== Peer Types ==========
 
+type PeerStatus string
+
+const (
+	PeerStatusFollowing PeerStatus = "FOLLOWING" // Active federation member
+	PeerStatusBlocked   PeerStatus = "BLOCKED"   // Malicious or untrusted
+	PeerStatusPending   PeerStatus = "PENDING"   // Awaiting approval
+	PeerStatusOffline   PeerStatus = "OFFLINE"   // Temporarily unavailable
+	PeerStatusSuspended PeerStatus = "SUSPENDED" // Suspended for review
+)
+
 type Peer struct {
-	ServerID    string    `json:"server_id"`
-	PublicKey   string    `json:"public_key"`
-	TrustScore  float64   `json:"trust_score"`
-	EndpointURL string    `json:"endpoint_url"`
-	Status      string    `json:"status"`
-	LastSeen    time.Time `json:"last_seen"`
-	CreatedAt   time.Time `json:"created_at"`
+	ServerID    string     `json:"server_id"`
+	PublicKey   string     `json:"public_key"`
+	TrustScore  float64    `json:"trust_score"`
+	EndpointURL string     `json:"endpoint_url"`
+	Status      PeerStatus `json:"status"`
+	LastSeen    time.Time  `json:"last_seen"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 // ========== GeoJSON Types (OGC API Features) ==========
