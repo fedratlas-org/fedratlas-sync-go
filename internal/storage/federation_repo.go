@@ -2,8 +2,9 @@ package storage
 
 import (
 	"encoding/json"
-	"fedratlas-sync/pkg/types"
 	"fmt"
+
+	"fedratlas-sync/pkg/types"
 )
 
 // ----Federation----//

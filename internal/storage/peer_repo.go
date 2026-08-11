@@ -2,9 +2,10 @@ package storage
 
 import (
 	"context"
-	"fedratlas-sync/pkg/types"
 	"fmt"
 	"time"
+
+	"fedratlas-sync/pkg/types"
 
 	"github.com/jackc/pgx/v5"
 )

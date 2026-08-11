@@ -2,10 +2,11 @@ package storage
 
 import (
 	"encoding/json"
-	"fedratlas-sync/pkg/types"
 	"fmt"
 	"log"
 	"strconv"
+
+	"fedratlas-sync/pkg/types"
 
 	"github.com/jackc/pgx/v5"
 )

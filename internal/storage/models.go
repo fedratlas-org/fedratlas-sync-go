@@ -2,8 +2,9 @@ package storage
 
 import (
 	"encoding/json"
-	"fedratlas-sync/pkg/types"
 	"time"
+
+	"fedratlas-sync/pkg/types"
 )
 
 type OutboxEntry struct {
