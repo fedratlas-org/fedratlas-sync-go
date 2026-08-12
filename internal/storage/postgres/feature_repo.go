@@ -1,4 +1,4 @@
-package storage
+package postgres
 
 import (
 	"encoding/json"
@@ -11,8 +11,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+//FeatureRepository implementation
+
 // CreateFeature creates a new geospatial feature
-func (s *PostgresStorage) CreateFeature(geometry interface{}, properties map[string]interface{}) (int64, error) {
+func (s *Repository) CreateFeature(geometry interface{}, properties map[string]interface{}) (int64, error) {
 	// Convert geometry to GeoJSON string
 	geomJSON, err := json.Marshal(geometry)
 	if err != nil {
@@ -41,7 +43,7 @@ func (s *PostgresStorage) CreateFeature(geometry interface{}, properties map[str
 }
 
 // GetFeature retrieves a feature by ID
-func (s *PostgresStorage) GetFeature(featureID int64) (*types.GeoJSONFeature, error) {
+func (s *Repository) GetFeature(featureID int64) (*types.GeoJSONFeature, error) {
 	query := `
         SELECT feature_id, ST_AsGeoJSON(geom) as geom, feature_data, version
         FROM geo_features
@@ -79,7 +81,7 @@ func (s *PostgresStorage) GetFeature(featureID int64) (*types.GeoJSONFeature, er
 }
 
 // UpdateFeature updates an existing feature
-func (s *PostgresStorage) UpdateFeature(featureID int64, geometry interface{}, properties map[string]interface{}, version int) error {
+func (s *Repository) UpdateFeature(featureID int64, geometry interface{}, properties map[string]interface{}, version int) error {
 	geomJSON, err := json.Marshal(geometry)
 	if err != nil {
 		return fmt.Errorf("failed to marshal geometry: %w", err)
@@ -112,7 +114,7 @@ func (s *PostgresStorage) UpdateFeature(featureID int64, geometry interface{}, p
 }
 
 // DeleteFeature deletes a feature
-func (s *PostgresStorage) DeleteFeature(featureID int64) error {
+func (s *Repository) DeleteFeature(featureID int64) error {
 	query := `DELETE FROM geo_features WHERE feature_id = $1`
 
 	result, err := s.pool.Exec(s.ctx, query, featureID)
@@ -129,7 +131,7 @@ func (s *PostgresStorage) DeleteFeature(featureID int64) error {
 }
 
 // GetFeatures retrieves features with filtering
-func (s *PostgresStorage) GetFeatures(collectionID string, bbox string, limit string, offset string) ([]*types.GeoJSONFeature, int, error) {
+func (s *Repository) GetFeatures(collectionID string, bbox string, limit string, offset string) ([]*types.GeoJSONFeature, int, error) {
 	// Parse limit and offset
 	limitInt := 10
 	if limit != "" {
@@ -198,7 +200,7 @@ func (s *PostgresStorage) GetFeatures(collectionID string, bbox string, limit st
 }
 
 // GetFeaturesByGeometry retrieves features within a geometry
-func (s *PostgresStorage) GetFeaturesByGeometry(collectionID string, geometry interface{}, distance float64) ([]*types.GeoJSONFeature, error) {
+func (s *Repository) GetFeaturesByGeometry(collectionID string, geometry interface{}, distance float64) ([]*types.GeoJSONFeature, error) {
 	geomJSON, err := json.Marshal(geometry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal geometry: %w", err)

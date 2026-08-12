@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"fedratlas-sync/internal/storage"
 	"net/http"
 
-	"fedratlas-sync/internal/storage"
 	"fedratlas-sync/internal/sync"
 	"fedratlas-sync/pkg/types"
 )
@@ -12,11 +12,11 @@ import (
 // PeersHandler handles peer management endpoints
 type PeersHandler struct {
 	engine  *sync.SyncEngine
-	storage *storage.PostgresStorage
+	storage storage.Repository
 }
 
 // NewPeersHandler creates a new peers handler
-func NewPeersHandler(engine *sync.SyncEngine, storage *storage.PostgresStorage) *PeersHandler {
+func NewPeersHandler(engine *sync.SyncEngine, storage storage.Repository) *PeersHandler {
 	return &PeersHandler{
 		engine:  engine,
 		storage: storage,
@@ -25,7 +25,7 @@ func NewPeersHandler(engine *sync.SyncEngine, storage *storage.PostgresStorage) 
 
 // ListPeers handles GET /fedmap/v1/peers
 func (h *PeersHandler) ListPeers(w http.ResponseWriter, r *http.Request) {
-	peers, err := h.storage.GetAllPeers()
+	peers, err := h.storage.Peer().GetAllPeers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

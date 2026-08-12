@@ -13,11 +13,11 @@ import (
 // No need for syncInboxHandler - everything happens here!
 type InboxHandler struct {
 	syncService *sync.InboxHandler
-	engine      *sync.SyncEngine         // For engine operations
-	storage     *storage.PostgresStorage // For database operations
+	engine      *sync.SyncEngine   // For engine operations
+	storage     storage.Repository // For database operations
 }
 
-func NewInboxHandler(engine *sync.SyncEngine, storage *storage.PostgresStorage) *InboxHandler {
+func NewInboxHandler(engine *sync.SyncEngine, storage storage.Repository) *InboxHandler {
 	return &InboxHandler{
 		engine:  engine,
 		storage: storage,
@@ -47,7 +47,7 @@ func (h *InboxHandler) HandleInbox(w http.ResponseWriter, r *http.Request) {
 
 	// ========== BUSINESS LOGIC ==========
 	// 1. Verify sender
-	peer, err := h.storage.GetPeer(msg.SenderServerID)
+	peer, err := h.storage.Peer().GetPeer(msg.SenderServerID)
 	if err != nil {
 		log.Printf("Unknown peer: %s", msg.SenderServerID)
 		http.Error(w, "Unknown peer", http.StatusUnauthorized)
@@ -66,7 +66,7 @@ func (h *InboxHandler) HandleInbox(w http.ResponseWriter, r *http.Request) {
 
 		// Reduce trust score
 		newScore := peer.TrustScore * 0.8
-		h.storage.UpdatePeerTrustScore(peer.ServerID, newScore)
+		h.storage.Federation().UpdatePeerTrustScore(peer.ServerID, newScore)
 		return
 	}
 
@@ -84,7 +84,7 @@ func (h *InboxHandler) HandleInbox(w http.ResponseWriter, r *http.Request) {
 	if newTrustScore > 1.0 {
 		newTrustScore = 1.0
 	}
-	h.storage.UpdatePeerTrustScore(peer.ServerID, newTrustScore)
+	h.storage.Federation().UpdatePeerTrustScore(peer.ServerID, newTrustScore)
 
 	// 5. Propagate to other peers
 	go h.syncService.PropagateToOtherPeers(&msg, peer.ServerID)

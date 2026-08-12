@@ -1,11 +1,11 @@
-package storage
+package postgres
 
 import (
 	"fmt"
 	"log"
 )
 
-func (s *PostgresStorage) createTables() error {
+func (s *Repository) createTables() error {
 	queries := []string{
 		// Enable PostGIS extension (if available)
 		`CREATE EXTENSION IF NOT EXISTS postgis`,

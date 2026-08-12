@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fedratlas-sync/internal/storage"
 	"net/http"
 	"strconv"
 	"time"
 
-	"fedratlas-sync/internal/storage"
 	"fedratlas-sync/internal/sync"
 	"fedratlas-sync/pkg/types"
 
@@ -15,10 +15,10 @@ import (
 
 type FeaturesHandler struct {
 	engine  *sync.SyncEngine
-	storage *storage.PostgresStorage
+	storage storage.Repository
 }
 
-func NewFeaturesHandler(engine *sync.SyncEngine, storage *storage.PostgresStorage) *FeaturesHandler {
+func NewFeaturesHandler(engine *sync.SyncEngine, storage storage.Repository) *FeaturesHandler {
 	return &FeaturesHandler{
 		engine:  engine,
 		storage: storage,
@@ -89,7 +89,7 @@ func (h *FeaturesHandler) CreateFeature(w http.ResponseWriter, r *http.Request) 
 	feature.Properties["created_at"] = time.Now().UTC()
 
 	// Save to database
-	featureID, err := h.storage.CreateFeature(feature.Geometry, feature.Properties)
+	featureID, err := h.storage.Feature().CreateFeature(feature.Geometry, feature.Properties)
 	if err != nil {
 		http.Error(w, "Failed to save feature: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -118,7 +118,7 @@ func (h *FeaturesHandler) GetFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	feature, err := h.storage.GetFeature(featureID)
+	feature, err := h.storage.Feature().GetFeature(featureID)
 	if err != nil {
 		http.Error(w, "Feature not found", http.StatusNotFound)
 		return
@@ -155,7 +155,7 @@ func (h *FeaturesHandler) UpdateFeature(w http.ResponseWriter, r *http.Request) 
 	feature.ID = featureID
 
 	// Get current feature to check version
-	current, err := h.storage.GetFeature(featureID)
+	current, err := h.storage.Feature().GetFeature(featureID)
 	if err != nil {
 		http.Error(w, "Feature not found", http.StatusNotFound)
 		return
@@ -176,7 +176,7 @@ func (h *FeaturesHandler) UpdateFeature(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Update database
-	err = h.storage.UpdateFeature(featureID, feature.Geometry, feature.Properties, newVersion)
+	err = h.storage.Feature().UpdateFeature(featureID, feature.Geometry, feature.Properties, newVersion)
 	if err != nil {
 		http.Error(w, "Failed to update feature: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -202,7 +202,7 @@ func (h *FeaturesHandler) DeleteFeature(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Delete from database
-	err = h.storage.DeleteFeature(featureID)
+	err = h.storage.Feature().DeleteFeature(featureID)
 	if err != nil {
 		http.Error(w, "Failed to delete feature: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -222,7 +222,7 @@ func (h *FeaturesHandler) ListFeatures(w http.ResponseWriter, r *http.Request) {
 	limit := r.URL.Query().Get("limit")
 	offset := r.URL.Query().Get("offset")
 
-	features, totalCount, err := h.storage.GetFeatures(collectionID, bbox, limit, offset)
+	features, totalCount, err := h.storage.Feature().GetFeatures(collectionID, bbox, limit, offset)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

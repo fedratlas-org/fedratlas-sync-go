@@ -1,4 +1,4 @@
-package storage
+package postgres
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"fedratlas-sync/internal/storage"
 	"fedratlas-sync/pkg/types"
 
 	"github.com/jackc/pgx/v5"
@@ -13,7 +14,7 @@ import (
 
 // ----Outbox----//
 // AddToOutbox adds an activity to the outbox
-func (s *PostgresStorage) AddToOutbox(activity *types.Activity) error {
+func (s *Repository) AddToOutbox(activity *types.Activity) error {
 	activityJSON, err := json.Marshal(activity)
 	if err != nil {
 		return fmt.Errorf("failed to marshal activity: %w", err)
@@ -32,7 +33,7 @@ func (s *PostgresStorage) AddToOutbox(activity *types.Activity) error {
 }
 
 // AddToOutboxBatch adds multiple activities using batch insert
-func (s *PostgresStorage) AddToOutboxBatch(activities []*types.Activity) error {
+func (s *Repository) AddToOutboxBatch(activities []*types.Activity) error {
 	batch := &pgx.Batch{}
 
 	for _, activity := range activities {
@@ -59,7 +60,7 @@ func (s *PostgresStorage) AddToOutboxBatch(activities []*types.Activity) error {
 }
 
 // GetPendingOutboxActivities retrieves pending activities with FOR UPDATE SKIP LOCKED for concurrency
-func (s *PostgresStorage) GetPendingOutboxActivities(limit int) ([]*OutboxEntry, error) {
+func (s *Repository) GetPendingOutboxActivities(limit int) ([]*storage.OutboxEntry, error) {
 	// Use FOR UPDATE SKIP LOCKED to avoid multiple workers processing same items
 	query := `
         SELECT id, activity, status, created_at
@@ -75,9 +76,9 @@ func (s *PostgresStorage) GetPendingOutboxActivities(limit int) ([]*OutboxEntry,
 	}
 	defer rows.Close()
 
-	var entries []*OutboxEntry
+	var entries []*storage.OutboxEntry
 	for rows.Next() {
-		var entry OutboxEntry
+		var entry storage.OutboxEntry
 		var activityJSON []byte
 
 		if err := rows.Scan(&entry.ID, &activityJSON, &entry.Status, &entry.CreatedAt); err != nil {
@@ -95,14 +96,53 @@ func (s *PostgresStorage) GetPendingOutboxActivities(limit int) ([]*OutboxEntry,
 
 	// Mark as processing
 	if len(entries) > 0 {
-		s.markActivitiesAsProcessing(entries)
+		s.MarkActivitiesAsProcessing(entries)
+	}
+
+	return entries, nil
+}
+
+// GetFailedActivities gets activities that need retry
+func (s *Repository) GetFailedOutboxActivities(limit int) ([]*storage.OutboxEntry, error) {
+	query := `
+        SELECT o.id, o.activity, o.status, o.created_at
+        FROM federation_outbox o
+        JOIN outbox_delivery d ON o.id = d.outbox_id
+        WHERE o.status = 'PROCESSING'
+          AND d.delivered_at IS NULL
+          AND d.next_retry <= NOW()
+        LIMIT $1
+        FOR UPDATE SKIP LOCKED`
+
+	rows, err := s.pool.Query(s.ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query failed activities: %w", err)
+	}
+	defer rows.Close()
+
+	var entries []*storage.OutboxEntry
+	for rows.Next() {
+		var entry storage.OutboxEntry
+		var activityJSON []byte
+
+		if err := rows.Scan(&entry.ID, &activityJSON, &entry.Status, &entry.CreatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan activity: %w", err)
+		}
+
+		var activity types.Activity
+		if err := json.Unmarshal(activityJSON, &activity); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal activity: %w", err)
+		}
+		entry.Activity = &activity
+
+		entries = append(entries, &entry)
 	}
 
 	return entries, nil
 }
 
 // markActivitiesAsProcessing updates status to PROCESSING
-func (s *PostgresStorage) markActivitiesAsProcessing(entries []*OutboxEntry) error {
+func (s *Repository) MarkActivitiesAsProcessing(entries []*storage.OutboxEntry) error {
 	ids := make([]int64, len(entries))
 	for i, entry := range entries {
 		ids[i] = entry.ID
@@ -119,7 +159,7 @@ func (s *PostgresStorage) markActivitiesAsProcessing(entries []*OutboxEntry) err
 }
 
 // MarkOutboxDelivered marks an activity as delivered to a specific peer
-func (s *PostgresStorage) MarkOutboxDelivered(outboxID int64, peerID string) error {
+func (s *Repository) MarkOutboxDelivered(outboxID int64, peerID string) error {
 	query := `
         INSERT INTO outbox_delivery (outbox_id, peer_id, delivered_at)
         VALUES ($1, $2, NOW())
@@ -137,12 +177,12 @@ func (s *PostgresStorage) MarkOutboxDelivered(outboxID int64, peerID string) err
 }
 
 // GetOutboxRetryInfo gets retry information for an outbox activity
-func (s *PostgresStorage) GetOutboxRetryInfo(outboxID int64, peerID string) (*OutboxDelivery, error) {
+func (s *Repository) GetOutboxRetryInfo(outboxID int64, peerID string) (*storage.OutboxDelivery, error) {
 	query := `SELECT outbox_id, peer_id, retry_count, next_retry, last_error, delivered_at
               FROM outbox_delivery
               WHERE outbox_id = $1 AND peer_id = $2`
 
-	var delivery OutboxDelivery
+	var delivery storage.OutboxDelivery
 	err := s.pool.QueryRow(s.ctx, query, outboxID, peerID).Scan(
 		&delivery.OutboxID, &delivery.PeerID, &delivery.RetryCount,
 		&delivery.NextRetry, &delivery.LastError, &delivery.DeliveredAt,
@@ -151,7 +191,7 @@ func (s *PostgresStorage) GetOutboxRetryInfo(outboxID int64, peerID string) (*Ou
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			// Return default delivery info if not found
-			return &OutboxDelivery{
+			return &storage.OutboxDelivery{
 				OutboxID:   outboxID,
 				PeerID:     peerID,
 				RetryCount: 0,
@@ -164,7 +204,7 @@ func (s *PostgresStorage) GetOutboxRetryInfo(outboxID int64, peerID string) (*Ou
 }
 
 // UpdateOutboxRetry updates retry information with exponential backoff
-func (s *PostgresStorage) UpdateOutboxRetry(outboxID int64, peerID string, retryCount int, nextRetry time.Time, lastError string) error {
+func (s *Repository) UpdateOutboxRetry(outboxID int64, peerID string, retryCount int, nextRetry time.Time, lastError string) error {
 	query := `
         INSERT INTO outbox_delivery (outbox_id, peer_id, retry_count, next_retry, last_error)
         VALUES ($1, $2, $3, $4, $5)
@@ -183,7 +223,7 @@ func (s *PostgresStorage) UpdateOutboxRetry(outboxID int64, peerID string, retry
 }
 
 // MarkOutboxFailed marks an activity as failed after max retries
-func (s *PostgresStorage) MarkOutboxFailed(outboxID int64, peerID string, lastError string) error {
+func (s *Repository) MarkOutboxFailed(outboxID int64, peerID string, lastError string) error {
 	query := `UPDATE federation_outbox SET status = 'FAILED', updated_at = NOW() WHERE id = $1`
 
 	if _, err := s.pool.Exec(s.ctx, query, outboxID); err != nil {
@@ -204,7 +244,7 @@ func (s *PostgresStorage) MarkOutboxFailed(outboxID int64, peerID string, lastEr
 }
 
 // GetPendingOutboxCount returns count of pending outbox activities
-func (s *PostgresStorage) GetPendingOutboxCount() (int, error) {
+func (s *Repository) GetPendingOutboxCount() (int, error) {
 	var count int
 	query := `SELECT COUNT(*) FROM federation_outbox WHERE status = 'PENDING'`
 	err := s.pool.QueryRow(s.ctx, query).Scan(&count)

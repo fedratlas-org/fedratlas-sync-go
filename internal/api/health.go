@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fedratlas-sync/internal/storage"
 	"net/http"
 	"runtime"
 	"time"
 
-	"fedratlas-sync/internal/storage"
 	"fedratlas-sync/internal/sync"
 )
 
@@ -14,12 +14,12 @@ import (
 type HealthHandler struct {
 	serverID  string
 	engine    *sync.SyncEngine
-	storage   *storage.PostgresStorage
+	storage   storage.Repository
 	startTime time.Time
 }
 
 // NewHealthHandler creates a new health handler
-func NewHealthHandler(serverID string, engine *sync.SyncEngine, storage *storage.PostgresStorage) *HealthHandler {
+func NewHealthHandler(serverID string, engine *sync.SyncEngine, storage storage.Repository) *HealthHandler {
 	return &HealthHandler{
 		serverID:  serverID,
 		engine:    engine,

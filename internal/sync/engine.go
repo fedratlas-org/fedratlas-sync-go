@@ -3,18 +3,18 @@ package sync
 import (
 	"context"
 	"encoding/json"
+	"fedratlas-sync/internal/storage"
 	"fmt"
 	"log"
 	"sync"
 	"time"
 
 	"fedratlas-sync/internal/crypto"
-	"fedratlas-sync/internal/storage"
 	"fedratlas-sync/pkg/types"
 )
 
 type SyncEngine struct {
-	storage   *storage.PostgresStorage
+	storage   storage.Repository
 	Signer    *crypto.Signer
 	outbox    *OutboxProcessor
 	inbox     *InboxHandler
@@ -47,7 +47,7 @@ func DefaultConfig() *EngineConfig {
 }
 
 // constructor: Creates and wires up all components
-func NewSyncEngine(storage *storage.PostgresStorage, signer *crypto.Signer, config *EngineConfig) *SyncEngine {
+func NewSyncEngine(storage storage.Repository, signer *crypto.Signer, config *EngineConfig) *SyncEngine {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	engine := &SyncEngine{
@@ -110,7 +110,7 @@ func (e *SyncEngine) OnFeatureChange(featureID int64, activityType types.Activit
 	activity.Signature = signature
 
 	// Store in outbox (change log)
-	if err := e.storage.AddToOutbox(activity); err != nil {
+	if err := e.storage.Outbox().AddToOutbox(activity); err != nil {
 		return fmt.Errorf("failed to add to outbox: %w", err)
 	}
 
@@ -132,7 +132,7 @@ func (e *SyncEngine) GetStartTime() time.Time {
 
 // GetOutboxCount returns the number of pending outbox activities
 func (e *SyncEngine) GetOutboxCount() int {
-	count, err := e.storage.GetPendingOutboxCount()
+	count, err := e.storage.Outbox().GetPendingOutboxCount()
 	if err != nil {
 		return 0
 	}

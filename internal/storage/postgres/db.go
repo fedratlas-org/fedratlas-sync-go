@@ -1,7 +1,8 @@
-package storage
+package postgres
 
 import (
 	"context"
+	"fedratlas-sync/internal/storage"
 	"fmt"
 	"log"
 	"time"
@@ -10,13 +11,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PostgresStorage struct {
+type Repository struct {
 	pool *pgxpool.Pool
 	ctx  context.Context
 }
 
-// NewPostgresStorage creates a new connection pool using pgx
-func NewPostgresStorage(connString string) (*PostgresStorage, error) {
+// NewRepository creates a new connection pool using pgx
+func NewRepository(connString string) (*Repository, error) {
 	ctx := context.Background()
 
 	// Parse connection config
@@ -46,7 +47,7 @@ func NewPostgresStorage(connString string) (*PostgresStorage, error) {
 	log.Printf("Connected to PostgreSQL with pgx (max_conns=%d, min_conns=%d)",
 		config.MaxConns, config.MinConns)
 
-	storage := &PostgresStorage{
+	storage := &Repository{
 		pool: pool,
 		ctx:  ctx,
 	}
@@ -59,25 +60,30 @@ func NewPostgresStorage(connString string) (*PostgresStorage, error) {
 	return storage, nil
 }
 
+func (s *Repository) Peer() storage.PeerRepository             { return s }
+func (s *Repository) Feature() storage.FeatureRepository       { return s }
+func (s *Repository) Outbox() storage.OutboxRepository         { return s }
+func (s *Repository) Federation() storage.FederationRepository { return s }
+
 // Close closes the connection pool
-func (s *PostgresStorage) Close() error {
+func (s *Repository) Close() error {
 	s.pool.Close()
 	log.Println("Database connection pool closed")
 	return nil
 }
 
 // GetPool returns the underlying connection pool (for advanced operations)
-func (s *PostgresStorage) GetPool() *pgxpool.Pool {
+func (s *Repository) GetPool() *pgxpool.Pool {
 	return s.pool
 }
 
 // BeginTx starts a new transaction
-func (s *PostgresStorage) BeginTx(ctx context.Context) (pgx.Tx, error) {
+func (s *Repository) BeginTx(ctx context.Context) (pgx.Tx, error) {
 	return s.pool.Begin(ctx)
 }
 
 // WithTransaction executes a function within a transaction
-func (s *PostgresStorage) WithTransaction(ctx context.Context, fn func(tx pgx.Tx) error) error {
+func (s *Repository) WithTransaction(ctx context.Context, fn func(tx pgx.Tx) error) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -97,6 +103,6 @@ func (s *PostgresStorage) WithTransaction(ctx context.Context, fn func(tx pgx.Tx
 }
 
 // Ping checks database connectivity
-func (s *PostgresStorage) Ping() error {
+func (s *Repository) Ping() error {
 	return s.pool.Ping(s.ctx)
 }

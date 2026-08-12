@@ -10,7 +10,7 @@ import (
 )
 
 func (e *SyncEngine) loadPeers() error {
-	peers, err := e.storage.GetAllPeers()
+	peers, err := e.storage.Peer().GetAllPeers()
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func (e *SyncEngine) AddPeer(peer *types.Peer) error {
 	e.peersMu.Lock()
 	defer e.peersMu.Unlock()
 
-	if err := e.storage.AddPeer(peer); err != nil {
+	if err := e.storage.Peer().AddPeer(peer); err != nil {
 		return err
 	}
 
@@ -134,7 +134,7 @@ func (e *SyncEngine) handleUnhealthyPeer(peer *types.Peer) {
 	defer e.peersMu.Unlock()
 
 	peer.TrustScore = newScore
-	e.storage.UpdatePeerTrustScore(peer.ServerID, newScore)
+	e.storage.Federation().UpdatePeerTrustScore(peer.ServerID, newScore)
 
 	// Block if trust gets too low
 	if newScore < 0.3 {

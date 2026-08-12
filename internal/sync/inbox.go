@@ -13,10 +13,10 @@ import (
 
 type InboxHandler struct {
 	engine  *SyncEngine
-	storage *storage.PostgresStorage
+	storage storage.Repository
 }
 
-func NewInboxHandler(engine *SyncEngine, storage *storage.PostgresStorage) *InboxHandler {
+func NewInboxHandler(engine *SyncEngine, storage storage.Repository) *InboxHandler {
 	return &InboxHandler{
 		engine:  engine,
 		storage: storage,
@@ -65,7 +65,7 @@ func (h *InboxHandler) ApplyFeatureChange(msg *types.SyncMessage, peer *types.Pe
 	properties["version"] = msg.Version
 
 	// Save to database
-	_, err := h.storage.CreateFeature(geometry, properties)
+	_, err := h.storage.Feature().CreateFeature(geometry, properties)
 	return err
 }
 

@@ -16,7 +16,7 @@ import (
 
 type OutboxProcessor struct {
 	engine  *SyncEngine
-	storage *storage.PostgresStorage
+	storage storage.Repository
 	signer  *crypto.Signer
 	stopCh  chan struct{}
 	client  *http.Client
@@ -49,7 +49,7 @@ type FederationLog struct {
 	Details      []byte
 }
 
-func NewOutboxProcessor(engine *SyncEngine, storage *storage.PostgresStorage, signer *crypto.Signer) *OutboxProcessor {
+func NewOutboxProcessor(engine *SyncEngine, storage storage.Repository, signer *crypto.Signer) *OutboxProcessor {
 	return &OutboxProcessor{
 		engine:  engine,
 		storage: storage,
@@ -96,7 +96,7 @@ func (o *OutboxProcessor) worker(workerID int) {
 
 func (o *OutboxProcessor) processPendingActivities(workerID int) {
 	// Get pending activities from database
-	pending, err := o.storage.GetPendingOutboxActivities(10)
+	pending, err := o.storage.Outbox().GetPendingOutboxActivities(10)
 	if err != nil {
 		log.Printf("Worker %d: failed to get pending activities: %v", workerID, err)
 		return
@@ -118,7 +118,7 @@ func (o *OutboxProcessor) deliverToAllPeers(workerID int, activity *storage.Outb
 			o.scheduleRetry(activity.ID, peer.ServerID, err)
 		} else {
 			// Mark as delivered
-			o.storage.MarkOutboxDelivered(activity.ID, peer.ServerID)
+			o.storage.Outbox().MarkOutboxDelivered(activity.ID, peer.ServerID)
 			log.Printf("Worker %d: delivered activity %d to peer %s", workerID, activity.ID, peer.ServerID)
 		}
 	}
@@ -177,13 +177,13 @@ func (o *OutboxProcessor) deliverToPeer(activity *types.Activity, peer *types.Pe
 
 func (o *OutboxProcessor) scheduleRetry(outboxID int64, peerID string, err error) {
 	// Get current retry count
-	retryInfo, _ := o.storage.GetOutboxRetryInfo(outboxID, peerID)
+	retryInfo, _ := o.storage.Outbox().GetOutboxRetryInfo(outboxID, peerID)
 
 	newRetryCount := retryInfo.RetryCount + 1
 
 	if newRetryCount >= o.engine.config.MaxRetries {
 		log.Printf("Max retries reached for outbox %d to peer %s, marking as failed", outboxID, peerID)
-		o.storage.MarkOutboxFailed(outboxID, peerID, err.Error())
+		o.storage.Outbox().MarkOutboxFailed(outboxID, peerID, err.Error())
 		return
 	}
 
@@ -195,6 +195,6 @@ func (o *OutboxProcessor) scheduleRetry(outboxID int64, peerID string, err error
 
 	nextRetry := time.Now().UTC().Add(delay)
 
-	o.storage.UpdateOutboxRetry(outboxID, peerID, newRetryCount, nextRetry, err.Error())
+	o.storage.Outbox().UpdateOutboxRetry(outboxID, peerID, newRetryCount, nextRetry, err.Error())
 	log.Printf("Scheduled retry %d for outbox %d to peer %s at %v", newRetryCount, outboxID, peerID, nextRetry)
 }

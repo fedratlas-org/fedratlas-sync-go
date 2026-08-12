@@ -1,4 +1,4 @@
-package storage
+package postgres
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 // ----Peers---//
 // AddPeer adds a new peer to the registry using pgx
-func (s *PostgresStorage) AddPeer(peer *types.Peer) error {
+func (s *Repository) AddPeer(peer *types.Peer) error {
 	query := `INSERT INTO peer_registry (server_id, public_key, trust_score, endpoint_url, status, last_seen)
               VALUES ($1, $2, $3, $4, $5, $6)
               ON CONFLICT (server_id) DO UPDATE SET
@@ -32,7 +32,7 @@ func (s *PostgresStorage) AddPeer(peer *types.Peer) error {
 }
 
 // AddPeerTx adds a peer within a transaction
-func (s *PostgresStorage) AddPeerTx(ctx context.Context, tx pgx.Tx, peer *types.Peer) error {
+func (s *Repository) AddPeerTx(ctx context.Context, tx pgx.Tx, peer *types.Peer) error {
 	query := `INSERT INTO peer_registry (server_id, public_key, trust_score, endpoint_url, status, last_seen)
               VALUES ($1, $2, $3, $4, $5, $6)
               ON CONFLICT (server_id) DO UPDATE SET
@@ -52,7 +52,7 @@ func (s *PostgresStorage) AddPeerTx(ctx context.Context, tx pgx.Tx, peer *types.
 }
 
 // GetPeer retrieves a peer by server_id using pgx
-func (s *PostgresStorage) GetPeer(serverID string) (*types.Peer, error) {
+func (s *Repository) GetPeer(serverID string) (*types.Peer, error) {
 	query := `SELECT server_id, public_key, trust_score, endpoint_url, status, last_seen, created_at
               FROM peer_registry WHERE server_id = $1`
 
@@ -73,7 +73,7 @@ func (s *PostgresStorage) GetPeer(serverID string) (*types.Peer, error) {
 }
 
 // GetAllPeers retrieves all peers using pgx batch
-func (s *PostgresStorage) GetAllPeers() ([]*types.Peer, error) {
+func (s *Repository) GetAllPeers() ([]*types.Peer, error) {
 	query := `SELECT server_id, public_key, trust_score, endpoint_url, status, last_seen, created_at
               FROM peer_registry ORDER BY trust_score DESC`
 
@@ -99,7 +99,7 @@ func (s *PostgresStorage) GetAllPeers() ([]*types.Peer, error) {
 }
 
 // GetActivePeers retrieves only following peers
-func (s *PostgresStorage) GetActivePeers() ([]*types.Peer, error) {
+func (s *Repository) GetActivePeers() ([]*types.Peer, error) {
 	query := `SELECT server_id, public_key, trust_score, endpoint_url, status, last_seen, created_at
               FROM peer_registry WHERE status = 'FOLLOWING' ORDER BY trust_score DESC`
 

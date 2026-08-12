@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fedratlas-sync/internal/storage/postgres"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +12,6 @@ import (
 
 	"fedratlas-sync/internal/api"
 	"fedratlas-sync/internal/crypto"
-	"fedratlas-sync/internal/storage"
 	"fedratlas-sync/internal/sync"
 
 	"github.com/go-chi/chi/v5"
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Initialize storage with pgx
-	db, err := storage.NewPostgresStorage(dbConnString)
+	db, err := postgres.NewRepository(dbConnString)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
