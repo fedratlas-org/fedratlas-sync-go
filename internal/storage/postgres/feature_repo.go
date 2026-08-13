@@ -6,7 +6,7 @@ import (
 	"log"
 	"strconv"
 
-	"fedratlas-sync/pkg/types"
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 
 	"github.com/jackc/pgx/v5"
 )

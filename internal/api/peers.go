@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"fedratlas-sync/internal/storage"
 	"net/http"
 
-	"fedratlas-sync/internal/sync"
-	"fedratlas-sync/pkg/types"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/sync"
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 )
 
 // PeersHandler handles peer management endpoints

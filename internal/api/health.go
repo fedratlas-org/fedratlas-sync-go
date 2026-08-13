@@ -2,12 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"fedratlas-sync/internal/storage"
 	"net/http"
 	"runtime"
 	"time"
 
-	"fedratlas-sync/internal/sync"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/sync"
 )
 
 // HealthHandler handles all health-related endpoints

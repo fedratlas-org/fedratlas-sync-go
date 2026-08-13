@@ -2,13 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	"fedratlas-sync/internal/storage"
 	"net/http"
 	"strconv"
 	"time"
 
-	"fedratlas-sync/internal/sync"
-	"fedratlas-sync/pkg/types"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/sync"
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 
 	"github.com/go-chi/chi/v5"
 )

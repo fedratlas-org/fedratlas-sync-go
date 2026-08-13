@@ -3,12 +3,13 @@ package sync
 import (
 	"bytes"
 	"encoding/json"
-	"fedratlas-sync/internal/storage"
-	"fedratlas-sync/pkg/types"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage"
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 )
 
 type InboxHandler struct {

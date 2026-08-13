@@ -2,10 +2,11 @@ package postgres
 
 import (
 	"context"
-	"fedratlas-sync/internal/storage"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
