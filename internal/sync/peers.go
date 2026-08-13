@@ -1,12 +1,13 @@
 package sync
 
 import (
-	"fedratlas-sync/pkg/types"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 )
 
 func (e *SyncEngine) loadPeers() error {

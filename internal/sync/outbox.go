@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"fedratlas-sync/internal/crypto"
-	"fedratlas-sync/internal/storage"
-	"fedratlas-sync/pkg/types"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/crypto"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage"
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 )
 
 type OutboxProcessor struct {

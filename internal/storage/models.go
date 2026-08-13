@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"fedratlas-sync/pkg/types"
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 )
 
 type OutboxEntry struct {

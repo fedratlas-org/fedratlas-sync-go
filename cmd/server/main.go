@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fedratlas-sync/internal/storage/postgres"
 	"log"
 	"net/http"
 	"os"
@@ -10,9 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"fedratlas-sync/internal/api"
-	"fedratlas-sync/internal/crypto"
-	"fedratlas-sync/internal/sync"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/api"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/crypto"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage/postgres"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/sync"
 
 	"github.com/go-chi/chi/v5"
 )

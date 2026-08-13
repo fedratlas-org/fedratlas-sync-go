@@ -2,11 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"fedratlas-sync/internal/storage"
-	"fedratlas-sync/internal/sync"
-	"fedratlas-sync/pkg/types"
 	"log"
 	"net/http"
+
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/sync"
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 )
 
 // InboxHandler handles incoming federation messages directly

@@ -1,4 +1,4 @@
-module fedratlas-sync
+module github.com/fedratlas-org/fedratlas-sync-go
 
 go 1.26.1
 

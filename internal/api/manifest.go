@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"fedratlas-sync/internal/crypto"
-	"fedratlas-sync/pkg/types"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/crypto"
+	"github.com/fedratlas-org/fedratlas-sync-go/pkg/types"
 )
 
 // ManifestHandler handles the federation manifest endpoint
