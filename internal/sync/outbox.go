@@ -132,20 +132,24 @@ func (o *OutboxProcessor) deliverToPeer(activity *types.Activity, peer *types.Pe
 		TargetObjectData: featureData,
 		Timestamp:        time.Now().UTC(),
 		PayloadChecksum:  activity.Checksum,
-		SenderSignature:  activity.Signature,
-		SenderServerID:   o.engine.config.ServerID,
+		//SenderSignature:  activity.Signature,
+		SenderServerID: o.engine.config.ServerID,
 	}
 
-	// Sign the message
+	// Marshal the message WITHOUT signature
 	msgData, err := json.Marshal(syncMsg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal sync message: %w", err)
 	}
 
-	syncMsg.SenderSignature, err = o.signer.Sign(msgData)
+	// Sign the marshaled data
+	signature, err := o.signer.Sign(msgData)
 	if err != nil {
 		return fmt.Errorf("failed to sign message: %w", err)
 	}
+
+	// Set the signature
+	syncMsg.SenderSignature = signature
 
 	// Send to peer's inbox (FR-04)
 	inboxURL := fmt.Sprintf("%s/fedmap/v1/inbox", peer.EndpointURL)
