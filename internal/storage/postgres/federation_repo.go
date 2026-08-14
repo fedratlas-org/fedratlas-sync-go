@@ -7,7 +7,7 @@ import (
 
 // ----Federation----//
 // LogFederationEvent logs a federation event
-func (s *Repository) LogFederationEvent(serverID string, activityType string, details interface{}) error {
+func (s *PostgresStorage) LogFederationEvent(serverID string, activityType string, details interface{}) error {
 	detailsJSON, err := json.Marshal(details)
 	if err != nil {
 		return fmt.Errorf("failed to marshal details: %w", err)
@@ -24,7 +24,7 @@ func (s *Repository) LogFederationEvent(serverID string, activityType string, de
 }
 
 // UpdatePeerTrustScore updates a peer's trust score
-func (s *Repository) UpdatePeerTrustScore(serverID string, newScore float64) error {
+func (s *PostgresStorage) UpdatePeerTrustScore(serverID string, newScore float64) error {
 	query := `UPDATE peer_registry SET trust_score = $2, updated_at = NOW() WHERE server_id = $1`
 
 	result, err := s.pool.Exec(s.ctx, query, serverID, newScore)

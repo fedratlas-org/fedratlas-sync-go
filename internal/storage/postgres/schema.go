@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func (s *Repository) createTables() error {
+func (s *PostgresStorage) createTables() error {
 	queries := []string{
 		// Enable PostGIS extension (if available)
 		`CREATE EXTENSION IF NOT EXISTS postgis`,

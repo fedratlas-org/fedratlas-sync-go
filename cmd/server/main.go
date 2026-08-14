@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Initialize storage with pgx
-	db, err := postgres.NewRepository(dbConnString)
+	db, err := postgres.NewPostgresStorage(dbConnString)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
