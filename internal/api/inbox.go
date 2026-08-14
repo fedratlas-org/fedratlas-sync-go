@@ -19,9 +19,11 @@ type InboxHandler struct {
 }
 
 func NewInboxHandler(engine *sync.SyncEngine, storage storage.Repository) *InboxHandler {
+	syncSrvice := sync.NewInboxHandler(engine, storage)
 	return &InboxHandler{
-		engine:  engine,
-		storage: storage,
+		syncService: syncSrvice,
+		engine:      engine,
+		storage:     storage,
 	}
 }
 

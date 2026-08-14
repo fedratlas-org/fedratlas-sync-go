@@ -87,9 +87,9 @@ func (e *SyncEngine) checkPeerHealth() {
 			continue
 		}
 		// Send to peer's inbox (FR-04)
-		healthURL := fmt.Sprintf("%s/fedmap/v1/health", peer.EndpointURL)
+		healthURL := fmt.Sprintf("%s/health", peer.EndpointURL)
 
-		req, err := http.NewRequest("POST", healthURL, nil)
+		req, err := http.NewRequest("GET", healthURL, nil)
 		if err != nil {
 			log.Printf("failed to create request: %w", err)
 			continue
