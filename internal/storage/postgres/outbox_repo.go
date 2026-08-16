@@ -243,6 +243,12 @@ func (s *PostgresStorage) MarkOutboxFailed(outboxID int64, peerID string, lastEr
 	return nil
 }
 
+func (s *PostgresStorage) ResetOutboxStatus(outboxID int64) error {
+	query := `UPDATE federation_outbox SET status = 'PENDING', updated_at = NOW() WHERE id = $1`
+	_, err := s.pool.Exec(s.ctx, query, outboxID)
+	return err
+}
+
 // GetPendingOutboxCount returns count of pending outbox activities
 func (s *PostgresStorage) GetPendingOutboxCount() (int, error) {
 	var count int
