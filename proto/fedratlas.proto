@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package fedratlas;
+
+option go_package = "github.com/fedratlas/sync-engine/proto";
+
+// FedratlasService provides federation synchronization for OGC API maps
+service FedratlasService {
+  // OnFeatureChange is called when a feature is created, updated, or deleted
+  rpc OnFeatureChange (FeatureChangeRequest) returns (FeatureChangeResponse);
+
+  // AddPeer adds a new peer server to the federation
+  rpc AddPeer (AddPeerRequest) returns (AddPeerResponse);
+
+  // GetPeers returns all active peers
+  rpc GetPeers (GetPeersRequest) returns (GetPeersResponse);
+
+  // GetServerID returns this server's ID
+  rpc GetServerID (GetServerIDRequest) returns (GetServerIDResponse);
+
+  // GetManifest returns the server manifest
+  rpc GetManifest (GetManifestRequest) returns (Manifest);
+}
+
+// FeatureChangeRequest represents a feature change event
+message FeatureChangeRequest {
+  int64 feature_id = 1;
+  string activity_type = 2;  // "Create", "Update", "Delete"
+  bytes feature_data = 3;    // GeoJSON data
+  int32 version = 4;
+  string collection_id = 5;  // "roads", "pois", etc.
+}
+
+message FeatureChangeResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+// Peer management
+message Peer {
+  string server_id = 1;
+  string public_key = 2;
+  double trust_score = 3;
+  string endpoint_url = 4;
+  string status = 5;
+  int64 last_seen = 6;
+  int64 created_at = 7;
+}
+
+message AddPeerRequest {
+  Peer peer = 1;
+}
+
+message AddPeerResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message GetPeersRequest {}
+
+message GetPeersResponse {
+  repeated Peer peers = 1;
+}
+
+message GetServerIDRequest {}
+
+message GetServerIDResponse {
+  string server_id = 1;
+}
+
+// Manifest
+message Manifest {
+  string protocol_version = 1;
+  string server_id = 2;
+  string status = 3;
+  string public_key = 4;
+  message EndpointConfig {
+    string inbox_url = 1;
+    string outbox_url = 2;
+    string manifest_url = 3;
+  }
+  EndpointConfig endpoints = 5;
+  message DatasetInfo {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    int64 feature_count = 4;
+  }
+  repeated DatasetInfo datasets = 6;
+}
+
+message GetManifestRequest {}

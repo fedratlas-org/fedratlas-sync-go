@@ -155,3 +155,31 @@ func (e *SyncEngine) Stop() {
 	e.cancel()
 	e.outbox.Stop()
 }
+
+func (e *SyncEngine) GetManifest() *types.Manifest {
+	return &types.Manifest{
+		ProtocolVersion: "1.0",
+		ServerID:        e.config.ServerID,
+		Status:          "active",
+		PublicKey:       e.Signer.GetPublicKeyBase64(),
+		Endpoints: types.EndpointConfig{
+			InboxURL:    "/fedmap/v1/inbox",
+			OutboxURL:   "/fedmap/v1/outbox",
+			ManifestURL: "/fedmap/v1/manifest",
+		},
+		Datasets: []types.DatasetInfo{
+			{ID: "roads", Name: "Road Network", FeatureCount: 0},
+			{ID: "pois", Name: "Points of Interest", FeatureCount: 0},
+		},
+	}
+}
+
+// PUBLIC getter method (uppercase = exported)
+func (e *SyncEngine) GetServerID() string {
+	return e.config.ServerID // ← Can access because same package
+}
+
+// PUBLIC getter for config (if needed)
+func (e *SyncEngine) GetConfig() *EngineConfig {
+	return e.config
+}
