@@ -199,6 +199,9 @@ func (o *OutboxProcessor) scheduleRetry(outboxID int64, peerID string, err error
 
 	nextRetry := time.Now().UTC().Add(delay)
 
+	//Sets Outbox status back to pending
+	o.storage.Outbox().ResetOutboxStatus(outboxID)
+
 	o.storage.Outbox().UpdateOutboxRetry(outboxID, peerID, newRetryCount, nextRetry, err.Error())
 	log.Printf("Scheduled retry %d for outbox %d to peer %s at %v", newRetryCount, outboxID, peerID, nextRetry)
 }

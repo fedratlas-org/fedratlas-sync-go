@@ -61,6 +61,7 @@ type OutboxRepository interface {
 	MarkActivitiesAsProcessing(entries []*OutboxEntry) error
 	MarkOutboxDelivered(outboxID int64, peerID string) error
 	MarkOutboxFailed(outboxID int64, peerID string, err string) error
+	ResetOutboxStatus(outboxID int64) error
 	GetOutboxRetryInfo(outboxID int64, peerID string) (*OutboxDelivery, error)
 	UpdateOutboxRetry(outboxID int64, peerID string, retryCount int, nextRetry time.Time, lastError string) error
 	GetPendingOutboxCount() (int, error)
