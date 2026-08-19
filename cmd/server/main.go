@@ -13,7 +13,7 @@ import (
 	"github.com/fedratlas-org/fedratlas-sync-go/internal/api"
 	"github.com/fedratlas-org/fedratlas-sync-go/internal/crypto"
 	grpcserver "github.com/fedratlas-org/fedratlas-sync-go/internal/grpc"
-	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage/postgres"
+	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage/ogc"
 	"github.com/fedratlas-org/fedratlas-sync-go/internal/sync"
 	pb "github.com/fedratlas-org/fedratlas-sync-go/proto"
 	"github.com/go-chi/chi/v5"
@@ -42,10 +42,31 @@ func main() {
 		grpcPort = "50051"
 	}
 
+	ogcBaseURL := os.Getenv("OGC_BASE_URL")
+	if ogcBaseURL == "" {
+		ogcBaseURL = "http://localhost:8081" // Default
+	}
+
+	ogcCollection := os.Getenv("OGC_COLLECTION")
+	if ogcCollection == "" {
+		ogcCollection = "places" // Default
+	}
+
 	// Initialize storage with pgx
-	db, err := postgres.NewPostgresStorage(dbConnString)
+	/*db, err := postgres.NewPostgresStorage(dbConnString)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()*/
+
+	//NEW - OGC API for features, PostgreSQL for federation data
+	db, err := ogc.NewOGCStorage(ogc.Config{
+		BaseURL:      "http://localhost:8081", // Your map backend OGC API
+		Collection:   "places",                // Default collection
+		DBConnString: dbConnString,            // PostgreSQL for federation data
+	})
+	if err != nil {
+		log.Fatalf("Failed to connect to OGC storage: %v", err)
 	}
 	defer db.Close()
 
