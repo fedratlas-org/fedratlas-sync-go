@@ -61,9 +61,9 @@ func main() {
 
 	//NEW - OGC API for features, PostgreSQL for federation data
 	db, err := ogc.NewOGCStorage(ogc.Config{
-		BaseURL:      "http://localhost:8081", // Your map backend OGC API
-		Collection:   "places",                // Default collection
-		DBConnString: dbConnString,            // PostgreSQL for federation data
+		BaseURL:      ogcBaseURL,    // Your map backend OGC API
+		Collection:   ogcCollection, // Default collection
+		DBConnString: dbConnString,  // PostgreSQL for federation data
 	})
 	if err != nil {
 		log.Fatalf("Failed to connect to OGC storage: %v", err)
