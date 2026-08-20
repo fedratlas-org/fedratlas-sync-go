@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,10 +12,12 @@ import (
 
 	"github.com/fedratlas-org/fedratlas-sync-go/internal/api"
 	"github.com/fedratlas-org/fedratlas-sync-go/internal/crypto"
+	grpcserver "github.com/fedratlas-org/fedratlas-sync-go/internal/grpc"
 	"github.com/fedratlas-org/fedratlas-sync-go/internal/storage/postgres"
 	"github.com/fedratlas-org/fedratlas-sync-go/internal/sync"
-
+	pb "github.com/fedratlas-org/fedratlas-sync-go/proto"
 	"github.com/go-chi/chi/v5"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -32,6 +35,11 @@ func main() {
 	port := os.Getenv("HTTP_PORT")
 	if port == "" {
 		port = "8080"
+	}
+
+	grpcPort := os.Getenv("GRPC_PORT")
+	if grpcPort == "" {
+		grpcPort = "50051"
 	}
 
 	// Initialize storage with pgx
@@ -60,7 +68,10 @@ func main() {
 
 	// Create and start sync engine
 	engine := sync.NewSyncEngine(db, signer, config)
-
+	if err := engine.Start(); err != nil {
+		log.Fatalf("Failed to start engine: %v", err)
+	}
+	defer engine.Stop()
 	// Create HTTP handlers
 	//inboxHandler := sync.NewInboxHandler(engine, db)
 
@@ -113,10 +124,20 @@ func main() {
 		}
 	}()
 
-	// Start sync engine
-	if err := engine.Start(); err != nil {
-		log.Fatalf("Failed to start sync engine: %v", err)
-	}
+	// Create gRPC server
+	grpcServer := grpc.NewServer()
+	pb.RegisterFedratlasServiceServer(grpcServer, grpcserver.NewServer(engine, db))
+
+	// Start listening with grpc Server
+	go func() {
+		listener, err := net.Listen("tcp", ":"+grpcPort)
+		if err != nil {
+			log.Fatalf("Failed to listen: %v", err)
+		}
+
+		log.Printf("Fedratlas gRPC server listening on :%s", grpcPort)
+		log.Fatalf("Server failed: %v", grpcServer.Serve(listener))
+	}()
 
 	// Wait for shutdown signal
 	quit := make(chan os.Signal, 1)
@@ -133,6 +154,9 @@ func main() {
 	if err := httpServer.Shutdown(ctx); err != nil {
 		log.Printf("HTTP server shutdown error: %v", err)
 	}
+
+	//Shutdown gRPC
+	grpcServer.GracefulStop()
 
 	// Stop sync engine
 	engine.Stop()
